@@ -4,7 +4,7 @@ import { Plus, Users, DollarSign, Trophy, Clock, CheckCircle } from 'lucide-reac
 import { format, isAfter } from 'date-fns';
 
 const SessionManagement: React.FC = () => {
-  const { sessions, bets, createSession, processJackpot, results } = useApp();
+  const { sessions, bets, createSession, results } = useApp();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newSessionTime, setNewSessionTime] = useState('');
   const [newSessionName, setNewSessionName] = useState('');

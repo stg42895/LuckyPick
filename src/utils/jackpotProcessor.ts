@@ -1,5 +1,5 @@
 // Utility functions for jackpot processing
-import { Session, Bet, JackpotResult } from '../types';
+import { Session, Bet } from '../types';
 
 export interface JackpotCalculation {
   winningNumber: number;
