@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Phone, Lock, Eye, EyeOff, User } from 'lucide-react';
+import { Mail, Phone, Lock, Eye, EyeOff, User, Loader2 } from 'lucide-react';
 
 const Login: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -55,18 +55,18 @@ const Login: React.FC = () => {
       if (mode === 'login') {
         const success = await login(email, password);
         if (!success) {
-          setError('Invalid credentials');
+          setError('Invalid credentials. Please check your email and password.');
         }
       } else {
         const userData = {
           fullName,
-          email: loginMethod === 'email' ? email : '',
+          email: loginMethod === 'email' ? email : `${phone}@phone.local`,
           phone: loginMethod === 'phone' ? phone : '',
           password
         };
         const success = await signup(userData);
         if (!success) {
-          setError('Registration failed. Email or phone may already be in use.');
+          setError('Registration failed. Email may already be in use.');
         }
       }
     } catch (err) {
@@ -88,6 +88,22 @@ const Login: React.FC = () => {
   const switchMode = (newMode: 'login' | 'signup') => {
     setMode(newMode);
     resetForm();
+  };
+
+  const handleDemoLogin = async (demoEmail: string, demoPassword: string) => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const success = await login(demoEmail, demoPassword);
+      if (!success) {
+        setError('Demo login failed. Please try again.');
+      }
+    } catch (err) {
+      setError('Demo login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -124,33 +140,35 @@ const Login: React.FC = () => {
           </button>
         </div>
 
-        {/* Login Method Toggle */}
-        <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
-          <button
-            type="button"
-            onClick={() => setLoginMethod('email')}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              loginMethod === 'email'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            <Mail className="w-4 h-4 inline mr-2" />
-            Email
-          </button>
-          <button
-            type="button"
-            onClick={() => setLoginMethod('phone')}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              loginMethod === 'phone'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            <Phone className="w-4 h-4 inline mr-2" />
-            Phone
-          </button>
-        </div>
+        {/* Login Method Toggle - Only for signup */}
+        {mode === 'signup' && (
+          <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
+            <button
+              type="button"
+              onClick={() => setLoginMethod('email')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                loginMethod === 'email'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <Mail className="w-4 h-4 inline mr-2" />
+              Email
+            </button>
+            <button
+              type="button"
+              onClick={() => setLoginMethod('phone')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                loginMethod === 'phone'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <Phone className="w-4 h-4 inline mr-2" />
+              Phone
+            </button>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Full Name - Only for signup */}
@@ -174,7 +192,7 @@ const Login: React.FC = () => {
           )}
 
           {/* Email or Phone */}
-          {loginMethod === 'email' ? (
+          {(mode === 'login' || loginMethod === 'email') ? (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
@@ -264,14 +282,17 @@ const Login: React.FC = () => {
           )}
 
           {error && (
-            <div className="text-red-600 text-sm text-center">{error}</div>
+            <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-lg">
+              {error}
+            </div>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
           >
+            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {loading 
               ? (mode === 'login' ? 'Signing In...' : 'Creating Account...') 
               : (mode === 'login' ? 'Sign In' : 'Create Account')
@@ -281,14 +302,28 @@ const Login: React.FC = () => {
 
         {mode === 'login' && (
           <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-            <h3 className="font-medium text-gray-800 mb-2">Demo Accounts:</h3>
-            <div className="text-sm text-gray-600 space-y-1">
-              <div>
-                <strong>User:</strong> test@gmail.com / 12345677
-              </div>
-              <div>
-                <strong>Admin:</strong> Admin@admin.com / 9794478972
-              </div>
+            <h3 className="font-medium text-gray-800 mb-3">Demo Accounts:</h3>
+            <div className="space-y-2">
+              <button
+                onClick={() => handleDemoLogin('test@gmail.com', '12345677')}
+                disabled={loading}
+                className="w-full text-left p-2 bg-white rounded border hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                <div className="text-sm">
+                  <strong>Demo User:</strong> test@gmail.com
+                </div>
+                <div className="text-xs text-gray-500">Password: 12345677</div>
+              </button>
+              <button
+                onClick={() => handleDemoLogin('Admin@admin.com', '9794478972')}
+                disabled={loading}
+                className="w-full text-left p-2 bg-white rounded border hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                <div className="text-sm">
+                  <strong>Admin:</strong> Admin@admin.com
+                </div>
+                <div className="text-xs text-gray-500">Password: 9794478972</div>
+              </button>
             </div>
           </div>
         )}
