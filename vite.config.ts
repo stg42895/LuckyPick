@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/',
+  base: '/LuckyPick/',
   plugins: [
     react(),
     VitePWA({
@@ -45,8 +45,8 @@ export default defineConfig({
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
-        scope: '/',
-        start_url: '/',
+        scope: '/LuckyPick/',
+        start_url: '/LuckyPick/',
         icons: [
           {
             src: 'icon-192x192.svg',
