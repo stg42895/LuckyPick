@@ -62,17 +62,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     initializeOfflineData();
   }, [isOnline]);
 
-  // Initialize default sessions (only 13:30)
+  // Initialize default sessions (2:30 PM and 7:00 PM)
   useEffect(() => {
     if (sessions.length === 0) {
       const today = format(new Date(), 'yyyy-MM-dd');
       const defaultSessions: Session[] = [
         {
-          id: 'session-1330',
-          time: '13:30',
+          id: 'session-1430',
+          name: 'Afternoon Draw',
+          time: '14:30',
           date: today,
           isActive: true,
-          betsCloseAt: '13:25',
+          betsCloseAt: '14:25',
+          totalPool: 0,
+          createdBy: 'system'
+        },
+        {
+          id: 'session-1900',
+          name: 'Evening Draw',
+          time: '19:00',
+          date: today,
+          isActive: true,
+          betsCloseAt: '18:55',
           totalPool: 0,
           createdBy: 'system'
         }
@@ -115,31 +126,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => clearInterval(autoJackpotInterval);
   }, [sessions]);
 
-  // Daily session creation system (only 13:30)
+  // Daily session creation system (2:30 PM and 7:00 PM)
   useEffect(() => {
     const createDailySessions = () => {
       const today = format(new Date(), 'yyyy-MM-dd');
       const todaySessions = sessions.filter(session => session.date === today);
 
-      // Check if we need to create today's session
+      // Check if we need to create today's sessions
       if (todaySessions.length === 0) {
-        console.log('Creating daily session for', today);
+        console.log('Creating daily sessions for', today);
         
-        const dailySession: Session = {
-          id: `session-1330-${today}`,
-          name: 'Afternoon Draw',
-          time: '13:30',
-          date: today,
-          isActive: true,
-          betsCloseAt: '13:25',
-          totalPool: 0,
-          createdBy: 'system'
-        };
+        const dailySessions: Session[] = [
+          {
+            id: `session-1430-${today}`,
+            name: 'Afternoon Draw',
+            time: '14:30',
+            date: today,
+            isActive: true,
+            betsCloseAt: '14:25',
+            totalPool: 0,
+            createdBy: 'system'
+          },
+          {
+            id: `session-1900-${today}`,
+            name: 'Evening Draw',
+            time: '19:00',
+            date: today,
+            isActive: true,
+            betsCloseAt: '18:55',
+            totalPool: 0,
+            createdBy: 'system'
+          }
+        ];
 
-        setSessions(prev => [...prev, dailySession]);
+        setSessions(prev => [...prev, ...dailySessions]);
         
-        // Cache new session
-        offlineStorage.saveData('sessions', dailySession);
+        // Cache new sessions
+        dailySessions.forEach(session => {
+          offlineStorage.saveData('sessions', session);
+        });
       }
     };
 
