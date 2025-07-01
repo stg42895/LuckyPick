@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
-import { Clock, Trophy, Wallet, LogOut, CheckCircle, AlertCircle } from 'lucide-react';
+import { Clock, Trophy, Wallet, LogOut } from 'lucide-react';
 import { format, isAfter, isBefore } from 'date-fns';
 import BettingModal from './BettingModal';
 import UserWallet from './UserWallet';
@@ -193,7 +193,6 @@ const UserDashboard: React.FC = () => {
                           </div>
                           {getUserWinnings(session.id)?.won && (
                             <div className="flex items-center text-green-600">
-                              <CheckCircle className="w-4 h-4 mr-1" />
                               <span className="text-sm font-medium">
                                 You won ₹{result.winnerPayout}!
                               </span>
@@ -226,7 +225,6 @@ const UserDashboard: React.FC = () => {
             <div className="space-y-4">
               {results.slice(-5).reverse().map(result => {
                 const session = sessions.find(s => s.id === result.sessionId);
-                const userWinnings = getUserWinnings(result.sessionId);
 
                 return (
                   <div key={result.id} className="bg-white rounded-lg shadow-md p-4">
@@ -245,23 +243,6 @@ const UserDashboard: React.FC = () => {
                           <span className="font-bold text-lg">{result.winningNumber}</span>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div className="text-sm text-gray-600">
-                      <p>Pool: ₹{result.totalPool}</p>
-                      <p>Winners: {result.winnerCount}</p>
-                      {userWinnings?.won && (
-                        <div className="flex items-center text-green-600 font-medium mt-1">
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          <span>You won: ₹{result.winnerPayout}</span>
-                        </div>
-                      )}
-                      {result.isZeroBetWin && (
-                        <div className="flex items-center text-orange-600 font-medium mt-1">
-                          <AlertCircle className="w-4 h-4 mr-1" />
-                          <span>Zero bet win - No winners</span>
-                        </div>
-                      )}
                     </div>
                   </div>
                 );
