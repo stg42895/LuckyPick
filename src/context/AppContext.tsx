@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session, Bet, JackpotResult, Transaction, WithdrawalRequest } from '../types';
-import { format, addMinutes, isAfter } from 'date-fns';
+import { format, addMinutes, isAfter, parseISO } from 'date-fns';
 import { offlineStorage } from '../utils/offlineStorage';
 import { useOffline } from '../hooks/useOffline';
 
@@ -94,6 +94,86 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     }
   }, [sessions.length]);
+
+  // Auto Jackpot Processing System
+  useEffect(() => {
+    const processAutoJackpots = () => {
+      const now = new Date();
+      const today = format(now, 'yyyy-MM-dd');
+
+      sessions.forEach(session => {
+        if (session.isActive && session.date === today) {
+          // Create session end time
+          const sessionEndTime = new Date(`${today}T${session.time}:00`);
+          
+          // Check if current time has passed the session end time
+          if (isAfter(now, sessionEndTime)) {
+            console.log(`Auto-processing jackpot for session ${session.id} at ${session.time}`);
+            processJackpot(session.id);
+          }
+        }
+      });
+    };
+
+    // Check every 30 seconds for sessions that need processing
+    const autoJackpotInterval = setInterval(processAutoJackpots, 30000);
+
+    // Also check immediately
+    processAutoJackpots();
+
+    return () => clearInterval(autoJackpotInterval);
+  }, [sessions]);
+
+  // Daily session creation system
+  useEffect(() => {
+    const createDailySessions = () => {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const todaySessions = sessions.filter(session => session.date === today);
+
+      // Check if we need to create today's sessions
+      if (todaySessions.length === 0) {
+        console.log('Creating daily sessions for', today);
+        
+        const dailySessions: Session[] = [
+          {
+            id: `session-1330-${today}`,
+            name: 'Afternoon Draw',
+            time: '13:30',
+            date: today,
+            isActive: true,
+            betsCloseAt: '13:25',
+            totalPool: 0,
+            createdBy: 'system'
+          },
+          {
+            id: `session-1830-${today}`,
+            name: 'Evening Draw',
+            time: '18:30',
+            date: today,
+            isActive: true,
+            betsCloseAt: '18:25',
+            totalPool: 0,
+            createdBy: 'system'
+          }
+        ];
+
+        setSessions(prev => [...prev, ...dailySessions]);
+        
+        // Cache new sessions
+        dailySessions.forEach(session => {
+          offlineStorage.saveData('sessions', session);
+        });
+      }
+    };
+
+    // Check for daily sessions every hour
+    const dailySessionInterval = setInterval(createDailySessions, 3600000);
+    
+    // Also check immediately
+    createDailySessions();
+
+    return () => clearInterval(dailySessionInterval);
+  }, [sessions]);
 
   // Save data to offline storage whenever state changes
   useEffect(() => {
@@ -189,9 +269,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const sessionBets = bets.filter(bet => bet.sessionId === sessionId);
     const session = sessions.find(s => s.id === sessionId);
     
-    if (!session || sessionBets.length === 0) return;
+    if (!session || sessionBets.length === 0) {
+      // If no bets, still mark session as inactive
+      if (session) {
+        setSessions(prev => prev.map(s => 
+          s.id === sessionId ? { ...s, isActive: false } : s
+        ));
+      }
+      return;
+    }
 
-    // Calculate total bets per number
+    // Calculate total bets per number (0-9)
     const numberTotals: { [key: number]: number } = {};
     for (let i = 0; i <= 9; i++) {
       numberTotals[i] = 0;
@@ -201,7 +289,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       numberTotals[bet.number] += bet.amount;
     });
 
-    // Find winning number (lowest total, or lowest number in case of tie)
+    // Find winning number (number with lowest total amount)
     let winningNumber = 0;
     let lowestTotal = numberTotals[0];
 
@@ -220,7 +308,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let winnerCount: number;
 
     if (isZeroBetWin) {
-      // Zero bet rule: 100% to admin
+      // Zero bet rule: 100% to admin (no one bet on winning number)
       adminFee = totalPool;
       winnerPayout = 0;
       winnerCount = 0;
@@ -231,6 +319,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const winners = sessionBets.filter(bet => bet.number === winningNumber);
       winnerCount = winners.length;
       winnerPayout = winnerCount > 0 ? winnersPool / winnerCount : 0;
+
+      // Create win transactions for winners
+      if (winnerCount > 0 && winnerPayout > 0) {
+        winners.forEach(winnerBet => {
+          const winTransaction: Transaction = {
+            id: `win-${Date.now()}-${winnerBet.userId}`,
+            userId: winnerBet.userId,
+            type: 'win',
+            amount: winnerPayout,
+            status: 'completed',
+            timestamp: new Date(),
+            description: `Jackpot win for session ${session.time} - Number ${winningNumber}`
+          };
+          
+          setTransactions(prev => [...prev, winTransaction]);
+        });
+      }
     }
 
     const result: JackpotResult = {
@@ -251,6 +356,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSessions(prev => prev.map(s => 
       s.id === sessionId ? { ...s, isActive: false } : s
     ));
+
+    console.log(`Jackpot processed for session ${sessionId}:`, {
+      winningNumber,
+      totalPool,
+      adminFee,
+      winnerCount,
+      winnerPayout,
+      isZeroBetWin
+    });
 
     // Save offline action if offline
     if (!isOnline) {

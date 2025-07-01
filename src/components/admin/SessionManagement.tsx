@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Plus, Users, DollarSign, Trophy } from 'lucide-react';
+import { Plus, Users, DollarSign, Trophy, Clock, CheckCircle } from 'lucide-react';
 import { format, isAfter } from 'date-fns';
 
 const SessionManagement: React.FC = () => {
-  const { sessions, bets, createSession, processJackpot } = useApp();
+  const { sessions, bets, createSession, processJackpot, results } = useApp();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newSessionTime, setNewSessionTime] = useState('');
   const [newSessionName, setNewSessionName] = useState('');
@@ -13,22 +13,10 @@ const SessionManagement: React.FC = () => {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-      
-      // Auto-process jackpots for sessions that have ended
-      sessions.forEach(session => {
-        if (session.isActive) {
-          const today = format(new Date(), 'yyyy-MM-dd');
-          const sessionDateTime = new Date(`${today}T${session.time}:00`);
-          
-          if (isAfter(currentTime, sessionDateTime)) {
-            processJackpot(session.id);
-          }
-        }
-      });
     }, 1000);
     
     return () => clearInterval(timer);
-  }, [sessions, processJackpot, currentTime]);
+  }, []);
 
   const handleCreateSession = () => {
     if (!newSessionTime) return;
@@ -58,10 +46,55 @@ const SessionManagement: React.FC = () => {
     return betsByNumber;
   };
 
+  const getSessionResult = (sessionId: string) => {
+    return results.find(result => result.sessionId === sessionId);
+  };
+
+  const getSessionStatus = (session: any) => {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const sessionEndTime = new Date(`${today}T${session.time}:00`);
+    const result = getSessionResult(session.id);
+    
+    if (result) {
+      return { status: 'completed', color: 'bg-green-100 text-green-800', text: 'Completed' };
+    } else if (!session.isActive) {
+      return { status: 'processed', color: 'bg-blue-100 text-blue-800', text: 'Processed' };
+    } else if (isAfter(currentTime, sessionEndTime)) {
+      return { status: 'processing', color: 'bg-yellow-100 text-yellow-800', text: 'Processing...' };
+    } else {
+      return { status: 'active', color: 'bg-green-100 text-green-800', text: 'Active' };
+    }
+  };
+
+  const getTimeUntilSession = (sessionTime: string) => {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const sessionDateTime = new Date(`${today}T${sessionTime}:00`);
+    const diff = sessionDateTime.getTime() - currentTime.getTime();
+    
+    if (diff <= 0) return 'Session Time Reached';
+    
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    } else {
+      return `${seconds}s`;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Session Management</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Session Management</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Jackpots are automatically processed at session end time
+          </p>
+        </div>
         <button
           onClick={() => setShowCreateModal(true)}
           className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -76,6 +109,9 @@ const SessionManagement: React.FC = () => {
           const sessionBets = getSessionBets(session.id);
           const betsByNumber = getBetsByNumber(session.id);
           const uniqueBettors = new Set(sessionBets.map(bet => bet.userId)).size;
+          const sessionStatus = getSessionStatus(session);
+          const result = getSessionResult(session.id);
+          const timeUntilSession = getTimeUntilSession(session.time);
           
           return (
             <div key={session.id} className="bg-white rounded-lg shadow-md p-6">
@@ -88,15 +124,28 @@ const SessionManagement: React.FC = () => {
                   <p className="text-sm text-gray-500">
                     Created by: {session.createdBy}
                   </p>
+                  {session.isActive && (
+                    <p className="text-sm text-blue-600 font-medium">
+                      <Clock className="w-3 h-3 inline mr-1" />
+                      {timeUntilSession}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    session.isActive 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {session.isActive ? 'Active' : 'Completed'}
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${sessionStatus.color}`}>
+                    {sessionStatus.text}
                   </span>
+                  {result && (
+                    <div className="mt-2 text-right">
+                      <div className="flex items-center text-yellow-600 text-sm">
+                        <Trophy className="w-4 h-4 mr-1" />
+                        <span className="font-bold">Winner: {result.winningNumber}</span>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {result.winnerCount} winners, ₹{result.winnerPayout} each
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -128,13 +177,50 @@ const SessionManagement: React.FC = () => {
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Bets by Number</h4>
                 <div className="grid grid-cols-5 gap-2">
                   {Object.entries(betsByNumber).map(([number, amount]) => (
-                    <div key={number} className="text-center p-2 bg-gray-50 rounded">
-                      <div className="font-semibold text-gray-900">{number}</div>
+                    <div 
+                      key={number} 
+                      className={`text-center p-2 rounded ${
+                        result && result.winningNumber === parseInt(number)
+                          ? 'bg-yellow-100 border-2 border-yellow-400'
+                          : 'bg-gray-50'
+                      }`}
+                    >
+                      <div className="font-semibold text-gray-900 flex items-center justify-center">
+                        {number}
+                        {result && result.winningNumber === parseInt(number) && (
+                          <CheckCircle className="w-3 h-3 ml-1 text-yellow-600" />
+                        )}
+                      </div>
                       <div className="text-xs text-gray-600">₹{amount}</div>
                     </div>
                   ))}
                 </div>
               </div>
+
+              {result && (
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Result Summary</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-600">Admin Fee:</p>
+                      <p className="font-semibold text-green-600">₹{result.adminFee}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Winners Pool:</p>
+                      <p className="font-semibold text-blue-600">
+                        ₹{result.totalPool - result.adminFee}
+                      </p>
+                    </div>
+                    {result.isZeroBetWin && (
+                      <div className="col-span-2">
+                        <p className="text-xs text-orange-600 font-medium">
+                          Zero Bet Win: No one bet on winning number
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}

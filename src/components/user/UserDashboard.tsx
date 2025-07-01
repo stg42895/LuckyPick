@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
-import { Clock, Trophy, Wallet, LogOut } from 'lucide-react';
+import { Clock, Trophy, Wallet, LogOut, CheckCircle, AlertCircle } from 'lucide-react';
 import { format, isAfter, isBefore } from 'date-fns';
 import BettingModal from './BettingModal';
 import UserWallet from './UserWallet';
 
 const UserDashboard: React.FC = () => {
-  const { user, logout } = useAuth();
-  const { sessions, results, bets } = useApp();
+  const { user, logout, updateWallet } = useAuth();
+  const { sessions, results, bets, transactions, addTransaction } = useApp();
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [showWallet, setShowWallet] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -19,6 +19,39 @@ const UserDashboard: React.FC = () => {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Auto-credit winnings to user wallet
+  useEffect(() => {
+    if (!user) return;
+
+    const userWinTransactions = transactions.filter(
+      t => t.userId === user.id && t.type === 'win' && t.status === 'completed'
+    );
+
+    userWinTransactions.forEach(winTransaction => {
+      // Check if this win has already been credited to wallet
+      const existingWalletCredit = transactions.find(
+        t => t.userId === user.id && 
+        t.type === 'deposit' && 
+        t.description.includes(`Win credit: ${winTransaction.id}`)
+      );
+
+      if (!existingWalletCredit) {
+        // Credit the win to user's wallet
+        updateWallet(winTransaction.amount);
+        
+        // Create a transaction record for the wallet credit
+        addTransaction({
+          userId: user.id,
+          type: 'deposit',
+          amount: winTransaction.amount,
+          status: 'completed',
+          timestamp: new Date(),
+          description: `Win credit: ${winTransaction.id} - Jackpot winnings`
+        });
+      }
+    });
+  }, [transactions, user, updateWallet, addTransaction]);
 
   const getTimeRemaining = (sessionTime: string, betsCloseAt: string) => {
     const today = format(new Date(), 'yyyy-MM-dd');
@@ -48,6 +81,31 @@ const UserDashboard: React.FC = () => {
 
   const getUserBetsForSession = (sessionId: string) => {
     return bets.filter(bet => bet.sessionId === sessionId && bet.userId === user?.id);
+  };
+
+  const getSessionResult = (sessionId: string) => {
+    return results.find(result => result.sessionId === sessionId);
+  };
+
+  const getUserWinnings = (sessionId: string) => {
+    const result = getSessionResult(sessionId);
+    if (!result) return null;
+
+    const userBets = bets.filter(
+      bet => bet.sessionId === sessionId && 
+      bet.userId === user?.id && 
+      bet.number === result.winningNumber
+    );
+
+    if (userBets.length > 0) {
+      return {
+        won: true,
+        amount: result.winnerPayout,
+        winningNumber: result.winningNumber
+      };
+    }
+
+    return { won: false, winningNumber: result.winningNumber };
   };
 
   return (
@@ -90,6 +148,7 @@ const UserDashboard: React.FC = () => {
                 const canBet = canPlaceBet(session.betsCloseAt);
                 const userBets = getUserBetsForSession(session.id);
                 const totalUserBet = userBets.reduce((sum, bet) => sum + bet.amount, 0);
+                const result = getSessionResult(session.id);
 
                 return (
                   <div key={session.id} className="bg-white rounded-lg shadow-md p-6">
@@ -123,16 +182,37 @@ const UserDashboard: React.FC = () => {
                       </div>
                     )}
 
+                    {result && (
+                      <div className="mb-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <Trophy className="w-4 h-4 text-yellow-600 mr-2" />
+                            <span className="text-sm font-medium text-yellow-800">
+                              Result: Number {result.winningNumber} Won!
+                            </span>
+                          </div>
+                          {getUserWinnings(session.id)?.won && (
+                            <div className="flex items-center text-green-600">
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              <span className="text-sm font-medium">
+                                You won ₹{result.winnerPayout}!
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <button
                       onClick={() => setSelectedSession(session.id)}
-                      disabled={!canBet}
+                      disabled={!canBet || !!result}
                       className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
-                        canBet
+                        canBet && !result
                           ? 'bg-blue-600 text-white hover:bg-blue-700'
                           : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       }`}
                     >
-                      {canBet ? 'Place Bet' : 'Betting Closed'}
+                      {result ? 'Session Completed' : canBet ? 'Place Bet' : 'Betting Closed'}
                     </button>
                   </div>
                 );
@@ -146,12 +226,7 @@ const UserDashboard: React.FC = () => {
             <div className="space-y-4">
               {results.slice(-5).reverse().map(result => {
                 const session = sessions.find(s => s.id === result.sessionId);
-                const userBets = bets.filter(bet => 
-                  bet.sessionId === result.sessionId && 
-                  bet.userId === user?.id &&
-                  bet.number === result.winningNumber
-                );
-                const userWon = userBets.length > 0;
+                const userWinnings = getUserWinnings(result.sessionId);
 
                 return (
                   <div key={result.id} className="bg-white rounded-lg shadow-md p-4">
@@ -175,10 +250,17 @@ const UserDashboard: React.FC = () => {
                     <div className="text-sm text-gray-600">
                       <p>Pool: ₹{result.totalPool}</p>
                       <p>Winners: {result.winnerCount}</p>
-                      {userWon && (
-                        <p className="text-green-600 font-medium">
-                          You won: ₹{result.winnerPayout}
-                        </p>
+                      {userWinnings?.won && (
+                        <div className="flex items-center text-green-600 font-medium mt-1">
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          <span>You won: ₹{result.winnerPayout}</span>
+                        </div>
+                      )}
+                      {result.isZeroBetWin && (
+                        <div className="flex items-center text-orange-600 font-medium mt-1">
+                          <AlertCircle className="w-4 h-4 mr-1" />
+                          <span>Zero bet win - No winners</span>
+                        </div>
                       )}
                     </div>
                   </div>
