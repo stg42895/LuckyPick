@@ -351,7 +351,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       totalPool,
       adminFee,
       winnerCount,
-      winnerPayout,
+      winnerPayout: isZeroBetWin ? 0 : winnerPayout,
       timestamp: new Date(),
       isZeroBetWin
     };
