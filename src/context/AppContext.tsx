@@ -340,7 +340,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
         
         // Set winnerPayout to the standard 9x amount for display purposes
-        winnerPayout = winnerCount > 0 ? winners[0].amount * 9 : 0;
+        winnerPayout = winners[0].amount * 9;
       }
     }
 
@@ -369,8 +369,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       adminFee,
       winnerCount,
       winnerPayout: isZeroBetWin ? 0 : '9x bet amount per winner',
-      isZeroBetWin,
-      payoutRule: '9x multiplier - each winner gets 9 times their bet amount'
+      isZeroBetWin
     });
 
     // Save offline action if offline

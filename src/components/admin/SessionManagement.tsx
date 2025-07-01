@@ -142,7 +142,8 @@ const SessionManagement: React.FC = () => {
                         <span className="font-bold">Winner: {result.winningNumber}</span>
                       </div>
                       <p className="text-xs text-gray-500">
-                        {result.winnerCount} winners, ₹{result.winnerPayout} each
+                        {result.winnerCount} winners
+                        {!result.isZeroBetWin && <span>, 9x payout each</span>}
                       </p>
                     </div>
                   )}
@@ -202,13 +203,15 @@ const SessionManagement: React.FC = () => {
                   <h4 className="text-sm font-medium text-gray-700 mb-2">Result Summary</h4>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-600">Admin Fee:</p>
-                      <p className="font-semibold text-green-600">₹{result.adminFee}</p>
+                      <p className="text-gray-600">Payout Rule:</p>
+                      <p className="font-semibold text-blue-600">
+                        {result.isZeroBetWin ? 'Zero bet win' : '9x multiplier'}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-gray-600">Winners Pool:</p>
-                      <p className="font-semibold text-blue-600">
-                        ₹{result.totalPool - result.adminFee}
+                      <p className="text-gray-600">Admin Earnings:</p>
+                      <p className="font-semibold text-green-600">
+                        ₹{result.adminFee}
                       </p>
                     </div>
                     {result.isZeroBetWin && (
