@@ -6,6 +6,7 @@ import Login from './components/Login';
 import UserDashboard from './components/user/UserDashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import OfflineIndicator from './components/OfflineIndicator';
 
 const AppContent: React.FC = () => {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ function App() {
     <Router>
       <AuthProvider>
         <AppProvider>
+          <OfflineIndicator />
           <AppContent />
           <PWAInstallPrompt />
         </AppProvider>
