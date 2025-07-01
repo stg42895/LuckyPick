@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { useAuth } from '../../context/AuthContext';
 import { Check, X, Clock, DollarSign, User, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
 const WithdrawalManagement: React.FC = () => {
   const { withdrawals, processWithdrawal } = useApp();
-  const { user } = useAuth();
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<string | null>(null);
 
   const handleProcessWithdrawal = (id: string, status: 'approved' | 'rejected') => {

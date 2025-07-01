@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Users, Search, DollarSign, Calendar, Trophy, TrendingUp } from 'lucide-react';
+import { Users, Search, DollarSign, Trophy } from 'lucide-react';
 import { format } from 'date-fns';
 
 const UserManagement: React.FC = () => {
