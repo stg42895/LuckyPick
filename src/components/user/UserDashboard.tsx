@@ -57,7 +57,7 @@ const UserDashboard: React.FC = () => {
           <div className="flex justify-between items-center h-16">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">LuckyPick</h1>
-              <p className="text-sm text-gray-600">Welcome, {user?.email}</p>
+              <p className="text-sm text-gray-600">Welcome, {user?.fullName || user?.email}</p>
             </div>
             <div className="flex items-center space-x-4">
               <button
