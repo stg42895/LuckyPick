@@ -1,15 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { Check, X, Clock, DollarSign, User, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
 const WithdrawalManagement: React.FC = () => {
   const { withdrawals, processWithdrawal } = useApp();
-  const [selectedWithdrawal, setSelectedWithdrawal] = useState<string | null>(null);
 
   const handleProcessWithdrawal = (id: string, status: 'approved' | 'rejected') => {
     processWithdrawal(id, status);
-    setSelectedWithdrawal(null);
   };
 
   const pendingWithdrawals = withdrawals.filter(w => w.status === 'pending');
