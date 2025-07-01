@@ -1,0 +1,201 @@
+import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { useApp } from '../../context/AppContext';
+import { 
+  Users, 
+  Calendar, 
+  TrendingUp, 
+  LogOut,
+  DollarSign,
+  Clock,
+  Trophy
+} from 'lucide-react';
+import SessionManagement from './SessionManagement';
+import WithdrawalManagement from './WithdrawalManagement';
+import UserManagement from './UserManagement';
+
+const AdminDashboard: React.FC = () => {
+  const { logout } = useAuth();
+  const { sessions, bets, results, withdrawals } = useApp();
+  const [activeTab, setActiveTab] = useState<'overview' | 'sessions' | 'withdrawals' | 'users'>('overview');
+
+  const totalPool = sessions.reduce((sum, session) => sum + session.totalPool, 0);
+  const totalBets = bets.length;
+  const pendingWithdrawals = withdrawals.filter(w => w.status === 'pending').length;
+  const totalAdminEarnings = results.reduce((sum, result) => sum + result.adminFee, 0);
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: TrendingUp },
+    { id: 'sessions', label: 'Sessions', icon: Calendar },
+    { id: 'withdrawals', label: 'Withdrawals', icon: DollarSign },
+    { id: 'users', label: 'Users', icon: Users },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
+              <p className="text-sm text-gray-600">LuckyPick Lottery Management</p>
+            </div>
+            <button
+              onClick={logout}
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex space-x-8">
+          {/* Sidebar */}
+          <div className="w-64 bg-white rounded-lg shadow-md p-4">
+            <nav className="space-y-2">
+              {tabs.map(tab => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                      activeTab === tab.id
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1">
+            {activeTab === 'overview' && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-gray-900">Dashboard Overview</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <DollarSign className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">Total Pool</p>
+                        <p className="text-2xl font-bold text-gray-900">₹{totalPool}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <Trophy className="w-6 h-6 text-green-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">Admin Earnings</p>
+                        <p className="text-2xl font-bold text-gray-900">₹{totalAdminEarnings}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <Clock className="w-6 h-6 text-purple-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">Total Bets</p>
+                        <p className="text-2xl font-bold text-gray-900">{totalBets}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-yellow-100 rounded-lg">
+                        <Users className="w-6 h-6 text-yellow-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">Pending Withdrawals</p>
+                        <p className="text-2xl font-bold text-gray-900">{pendingWithdrawals}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Results */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Results</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Session
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Winning Number
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Total Pool
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Admin Fee
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Winners
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {results.slice(-5).reverse().map(result => {
+                          const session = sessions.find(s => s.id === result.sessionId);
+                          return (
+                            <tr key={result.id}>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {session?.name || session?.time}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                  {result.winningNumber}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                ₹{result.totalPool}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
+                                ₹{result.adminFee}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {result.winnerCount}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'sessions' && <SessionManagement />}
+            {activeTab === 'withdrawals' && <WithdrawalManagement />}
+            {activeTab === 'users' && <UserManagement />}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AdminDashboard;
