@@ -2,21 +2,21 @@
   "name": "LuckyPick Lottery",
   "short_name": "LuckyPick",
   "description": "Daily Number Lottery Application",
-  "start_url": "/LuckyPick/",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
   "orientation": "portrait",
-  "scope": "/LuckyPick/",
+  "scope": "/",
   "icons": [
     {
-      "src": "/LuckyPick/icon-192x192.svg",
+      "src": "/icon-192x192.svg",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "maskable any"
     },
     {
-      "src": "/LuckyPick/icon-512x512.svg",
+      "src": "/icon-512x512.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "maskable any"
