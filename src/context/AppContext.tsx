@@ -316,7 +316,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       winnerCount = 0;
     } else {
       // New 9x payout rule: Each winner gets 9x their bet amount
-      adminFee = 0; // No admin commission
+      adminFee = 0; // No admin commission for regular wins
       const winners = sessionBets.filter(bet => bet.number === winningNumber);
       winnerCount = winners.length;
       winnerPayout = 0; // This will be calculated per bet (9x bet amount)

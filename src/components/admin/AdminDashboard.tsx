@@ -27,7 +27,8 @@ const AdminDashboard: React.FC = () => {
   const totalPool = sessions.reduce((sum, session) => sum + session.totalPool, 0);
   const totalBets = bets.length;
   const pendingWithdrawals = withdrawals.filter(w => w.status === 'pending').length;
-  const totalAdminEarnings = results.reduce((sum, result) => sum + result.adminFee, 0);
+  // Admin earnings come only from zero bet wins
+  const totalAdminEarnings = results.reduce((sum, result) => sum + (result.isZeroBetWin ? result.adminFee : 0), 0);
   const activeSessionsCount = sessions.filter(s => s.isActive).length;
 
   const tabs = [

@@ -12,6 +12,7 @@ const UserDashboard: React.FC = () => {
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [showWallet, setShowWallet] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [processedWinnings, setProcessedWinnings] = useState(new Set<string>());
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -25,7 +26,10 @@ const UserDashboard: React.FC = () => {
     if (!user) return;
 
     const userWinTransactions = transactions.filter(
-      t => t.userId === user.id && t.type === 'win' && t.status === 'completed'
+      t => t.userId === user.id && 
+      t.type === 'win' && 
+      t.status === 'completed' &&
+      !processedWinnings.has(t.id)
     );
 
     userWinTransactions.forEach(winTransaction => {
@@ -49,9 +53,12 @@ const UserDashboard: React.FC = () => {
           timestamp: new Date(),
           description: `Win credit: ${winTransaction.id} - Jackpot winnings (9x payout)`
         });
+
+        // Mark this winning as processed
+        setProcessedWinnings(prev => new Set([...prev, winTransaction.id]));
       }
     });
-  }, [transactions, user, updateWallet, addTransaction]);
+  }, [transactions, user, updateWallet, addTransaction, processedWinnings]);
 
   const getTimeRemaining = (sessionTime: string, betsCloseAt: string) => {
     const today = format(new Date(), 'yyyy-MM-dd');
