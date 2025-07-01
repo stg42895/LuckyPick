@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Phone, Lock, Eye, EyeOff, User, Loader2 } from 'lucide-react';
+import OTPVerification from './OTPVerification';
+import { OTPService } from '../services/otpService';
 
 const Login: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -14,6 +16,8 @@ const Login: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showOTPVerification, setShowOTPVerification] = useState(false);
+  const [pendingSignupData, setPendingSignupData] = useState<any>(null);
   
   const { login, signup } = useAuth();
 
@@ -58,15 +62,43 @@ const Login: React.FC = () => {
           setError('Invalid credentials. Please check your email and password.');
         }
       } else {
-        const userData = {
-          fullName,
-          email: loginMethod === 'email' ? email : `${phone}@phone.local`,
-          phone: loginMethod === 'phone' ? phone : '',
-          password
-        };
-        const success = await signup(userData);
-        if (!success) {
-          setError('Registration failed. Email may already be in use.');
+        // For signup, first send OTP for email verification
+        const userEmail = loginMethod === 'email' ? email : `${phone}@phone.local`;
+        
+        // Check if email is already verified
+        const isVerified = await OTPService.isEmailVerified(userEmail);
+        
+        if (isVerified) {
+          // Email already verified, proceed with signup
+          const userData = {
+            fullName,
+            email: userEmail,
+            phone: loginMethod === 'phone' ? phone : '',
+            password
+          };
+          
+          const success = await signup(userData);
+          if (!success) {
+            setError('Registration failed. Email may already be in use.');
+          }
+        } else {
+          // Send OTP for verification
+          const otpResponse = await OTPService.sendOTP(userEmail);
+          
+          if (otpResponse.success) {
+            // Store signup data for after verification
+            setPendingSignupData({
+              fullName,
+              email: userEmail,
+              phone: loginMethod === 'phone' ? phone : '',
+              password
+            });
+            
+            // Show OTP verification screen
+            setShowOTPVerification(true);
+          } else {
+            setError(otpResponse.message);
+          }
         }
       }
     } catch (err) {
@@ -76,6 +108,29 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleOTPVerified = async () => {
+    if (pendingSignupData) {
+      setLoading(true);
+      try {
+        const success = await signup(pendingSignupData);
+        if (!success) {
+          setError('Registration failed. Please try again.');
+          setShowOTPVerification(false);
+        }
+      } catch (err) {
+        setError('Registration failed');
+        setShowOTPVerification(false);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleBackFromOTP = () => {
+    setShowOTPVerification(false);
+    setPendingSignupData(null);
+  };
+
   const resetForm = () => {
     setEmail('');
     setPhone('');
@@ -83,6 +138,8 @@ const Login: React.FC = () => {
     setConfirmPassword('');
     setFullName('');
     setError('');
+    setShowOTPVerification(false);
+    setPendingSignupData(null);
   };
 
   const switchMode = (newMode: 'login' | 'signup') => {
@@ -105,6 +162,17 @@ const Login: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Show OTP verification screen
+  if (showOTPVerification && pendingSignupData) {
+    return (
+      <OTPVerification
+        email={pendingSignupData.email}
+        onVerified={handleOTPVerified}
+        onBack={handleBackFromOTP}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -331,8 +399,7 @@ const Login: React.FC = () => {
         {mode === 'signup' && (
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-800">
-              <strong>Welcome to LuckyPick!</strong> Create your account to start playing the daily number lottery. 
-              New users get ₹100 welcome bonus!
+              <strong>Email Verification Required!</strong> We'll send a 6-digit verification code to your email address to confirm your account.
             </p>
           </div>
         )}
