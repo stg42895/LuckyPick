@@ -13,7 +13,6 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
   
   const { login } = useAuth();
 
@@ -56,7 +55,6 @@ const Login: React.FC = () => {
       // For demo purposes, we'll simulate OTP sending
       // In a real app, this would call an API to send OTP
       console.log('Sending OTP to:', email);
-      setOtpSent(true);
       setMode('verify');
       setError('');
     } catch (err) {
@@ -115,7 +113,6 @@ const Login: React.FC = () => {
     setFullName('');
     setOtp('');
     setError('');
-    setOtpSent(false);
   };
 
   return (
