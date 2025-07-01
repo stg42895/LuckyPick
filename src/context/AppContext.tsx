@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session, Bet, JackpotResult, Transaction, WithdrawalRequest } from '../types';
-import { format, addMinutes, isBefore, isAfter } from 'date-fns';
+import { format, addMinutes, isAfter } from 'date-fns';
 import { offlineStorage } from '../utils/offlineStorage';
 import { useOffline } from '../hooks/useOffline';
 
@@ -122,7 +122,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const createSession = (time: string, name?: string) => {
     const today = format(new Date(), 'yyyy-MM-dd');
-    const [hours, minutes] = time.split(':');
     const closeTime = format(addMinutes(new Date(`${today}T${time}:00`), -5), 'HH:mm');
     
     const newSession: Session = {
