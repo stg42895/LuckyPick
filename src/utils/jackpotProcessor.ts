@@ -9,10 +9,11 @@ export interface JackpotCalculation {
   winnerPayout: number;
   isZeroBetWin: boolean;
   numberTotals: { [key: number]: number };
+  payoutRule: string;
 }
 
 /**
- * Calculate jackpot result for a session
+ * Calculate jackpot result for a session using 9x payout rule
  */
 export function calculateJackpot(session: Session, bets: Bet[]): JackpotCalculation {
   const sessionBets = bets.filter(bet => bet.sessionId === session.id);
@@ -45,19 +46,23 @@ export function calculateJackpot(session: Session, bets: Bet[]): JackpotCalculat
   let adminFee: number;
   let winnerPayout: number;
   let winnerCount: number;
+  let payoutRule: string;
 
   if (isZeroBetWin) {
     // Zero bet rule: 100% to admin (no one bet on winning number)
     adminFee = totalPool;
     winnerPayout = 0;
     winnerCount = 0;
+    payoutRule = 'Zero bet win - 100% to admin';
   } else {
-    // Standard rule: 90% to winners, 10% to admin
-    adminFee = totalPool * 0.1;
-    const winnersPool = totalPool * 0.9;
+    // New 9x payout rule: Each winner gets 9x their bet amount
+    adminFee = 0; // No admin commission
     const winners = sessionBets.filter(bet => bet.number === winningNumber);
     winnerCount = winners.length;
-    winnerPayout = winnerCount > 0 ? winnersPool / winnerCount : 0;
+    
+    // For display purposes, show the 9x amount (actual payouts are calculated per bet)
+    winnerPayout = winnerCount > 0 ? winners[0].amount * 9 : 0;
+    payoutRule = '9x multiplier - each winner gets 9 times their bet amount';
   }
 
   return {
@@ -67,7 +72,8 @@ export function calculateJackpot(session: Session, bets: Bet[]): JackpotCalculat
     winnerCount,
     winnerPayout,
     isZeroBetWin,
-    numberTotals
+    numberTotals,
+    payoutRule
   };
 }
 
@@ -97,13 +103,14 @@ export function formatJackpotResult(calculation: JackpotCalculation, sessionId: 
     Total Pool: ₹${calculation.totalPool}
     Admin Fee: ₹${calculation.adminFee}
     Winner Count: ${calculation.winnerCount}
-    Winner Payout: ₹${calculation.winnerPayout}
+    Payout Rule: ${calculation.payoutRule}
+    Winner Payout: ${calculation.isZeroBetWin ? '₹0' : '₹' + calculation.winnerPayout + ' per winner (9x bet amount)'}
     Zero Bet Win: ${calculation.isZeroBetWin}
     Number Distribution: ${JSON.stringify(calculation.numberTotals)}`;
 }
 
 /**
- * Validate jackpot calculation
+ * Validate jackpot calculation for 9x payout rule
  */
 export function validateJackpotCalculation(calculation: JackpotCalculation): boolean {
   // Basic validation checks
@@ -113,12 +120,11 @@ export function validateJackpotCalculation(calculation: JackpotCalculation): boo
   if (calculation.winnerCount < 0) return false;
   if (calculation.winnerPayout < 0) return false;
   
-  // Validate that admin fee + winner payouts don't exceed total pool
-  const totalWinnerPayouts = calculation.winnerCount * calculation.winnerPayout;
-  const totalDistributed = calculation.adminFee + totalWinnerPayouts;
+  // For 9x payout rule, admin fee should be 0 unless it's a zero bet win
+  if (!calculation.isZeroBetWin && calculation.adminFee > 0) return false;
   
-  // Allow for small floating point differences
-  if (Math.abs(totalDistributed - calculation.totalPool) > 0.01) return false;
+  // For zero bet wins, admin fee should equal total pool
+  if (calculation.isZeroBetWin && calculation.adminFee !== calculation.totalPool) return false;
   
   return true;
 }

@@ -47,7 +47,7 @@ const UserDashboard: React.FC = () => {
           amount: winTransaction.amount,
           status: 'completed',
           timestamp: new Date(),
-          description: `Win credit: ${winTransaction.id} - Jackpot winnings`
+          description: `Win credit: ${winTransaction.id} - Jackpot winnings (9x payout)`
         });
       }
     });
@@ -98,9 +98,11 @@ const UserDashboard: React.FC = () => {
     );
 
     if (userBets.length > 0) {
+      // Calculate total winnings for this user (9x each bet)
+      const totalWinnings = userBets.reduce((sum, bet) => sum + (bet.amount * 9), 0);
       return {
         won: true,
-        amount: result.winnerPayout,
+        amount: totalWinnings,
         winningNumber: result.winningNumber
       };
     }
@@ -179,6 +181,7 @@ const UserDashboard: React.FC = () => {
                           Your bets: {userBets.map(bet => `${bet.number} (₹${bet.amount})`).join(', ')}
                         </p>
                         <p className="text-sm text-blue-600">Total: ₹{totalUserBet}</p>
+                        <p className="text-xs text-blue-500">Potential win: ₹{totalUserBet * 9} (9x payout)</p>
                       </div>
                     )}
 
@@ -194,7 +197,7 @@ const UserDashboard: React.FC = () => {
                           {getUserWinnings(session.id)?.won && (
                             <div className="flex items-center text-green-600">
                               <span className="text-sm font-medium">
-                                You won ₹{result.winnerPayout}!
+                                You won ₹{getUserWinnings(session.id)?.amount}!
                               </span>
                             </div>
                           )}

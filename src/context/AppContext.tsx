@@ -269,13 +269,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const sessionBets = bets.filter(bet => bet.sessionId === sessionId);
     const session = sessions.find(s => s.id === sessionId);
     
-    if (!session || sessionBets.length === 0) {
-      // If no bets, still mark session as inactive
-      if (session) {
-        setSessions(prev => prev.map(s => 
-          s.id === sessionId ? { ...s, isActive: false } : s
-        ));
-      }
+    if (!session) {
+      return;
+    }
+
+    // If no bets, mark session as inactive
+    if (sessionBets.length === 0) {
+      setSessions(prev => prev.map(s => 
+        s.id === sessionId ? { ...s, isActive: false } : s
+      ));
       return;
     }
 
@@ -313,28 +315,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       winnerPayout = 0;
       winnerCount = 0;
     } else {
-      // Standard rule: 90% to winners, 10% to admin
-      adminFee = totalPool * 0.1;
-      const winnersPool = totalPool * 0.9;
+      // New 9x payout rule: Each winner gets 9x their bet amount
+      adminFee = 0; // No admin commission
       const winners = sessionBets.filter(bet => bet.number === winningNumber);
       winnerCount = winners.length;
-      winnerPayout = winnerCount > 0 ? winnersPool / winnerCount : 0;
+      winnerPayout = 0; // This will be calculated per bet (9x bet amount)
 
-      // Create win transactions for winners
-      if (winnerCount > 0 && winnerPayout > 0) {
+      // Create win transactions for winners with 9x payout
+      if (winnerCount > 0) {
         winners.forEach(winnerBet => {
+          const individualPayout = winnerBet.amount * 9; // 9x the bet amount
+          
           const winTransaction: Transaction = {
-            id: `win-${Date.now()}-${winnerBet.userId}`,
+            id: `win-${Date.now()}-${winnerBet.userId}-${Math.random()}`,
             userId: winnerBet.userId,
             type: 'win',
-            amount: winnerPayout,
+            amount: individualPayout,
             status: 'completed',
             timestamp: new Date(),
-            description: `Jackpot win for session ${session.time} - Number ${winningNumber}`
+            description: `Jackpot win: ₹${winnerBet.amount} × 9 = ₹${individualPayout} for number ${winningNumber} in session ${session.time}`
           };
           
           setTransactions(prev => [...prev, winTransaction]);
         });
+        
+        // Set winnerPayout to the standard 9x amount for display purposes
+        winnerPayout = winnerCount > 0 ? winners[0].amount * 9 : 0;
       }
     }
 
@@ -362,8 +368,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       totalPool,
       adminFee,
       winnerCount,
-      winnerPayout,
-      isZeroBetWin
+      winnerPayout: isZeroBetWin ? 0 : '9x bet amount per winner',
+      isZeroBetWin,
+      payoutRule: '9x multiplier - each winner gets 9 times their bet amount'
     });
 
     // Save offline action if offline

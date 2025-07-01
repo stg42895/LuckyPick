@@ -121,6 +121,7 @@ const AdminDashboard: React.FC = () => {
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-600">Admin Earnings</p>
                         <p className="text-2xl font-bold text-gray-900">₹{totalAdminEarnings}</p>
+                        <p className="text-xs text-gray-500">Zero bet wins only</p>
                       </div>
                     </div>
                   </div>
@@ -169,10 +170,10 @@ const AdminDashboard: React.FC = () => {
                       <Zap className="w-6 h-6 text-green-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Auto Jackpot System</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Auto Jackpot System - 9x Payout Rule</h3>
                       <p className="text-gray-700 mb-3">
                         Jackpots are automatically calculated and published when sessions reach their end time. 
-                        No manual intervention required.
+                        Winners receive 9 times their bet amount with no admin commission.
                       </p>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                         <div className="bg-white p-3 rounded-lg">
@@ -180,8 +181,8 @@ const AdminDashboard: React.FC = () => {
                           <p className="text-gray-600">Number with lowest total bets wins</p>
                         </div>
                         <div className="bg-white p-3 rounded-lg">
-                          <p className="font-medium text-gray-900">Distribution</p>
-                          <p className="text-gray-600">90% to winners, 10% admin fee</p>
+                          <p className="font-medium text-gray-900">Payout Rule</p>
+                          <p className="text-gray-600">Each winner gets 9x their bet amount</p>
                         </div>
                         <div className="bg-white p-3 rounded-lg">
                           <p className="font-medium text-gray-900">Zero Bet Rule</p>
@@ -209,7 +210,7 @@ const AdminDashboard: React.FC = () => {
                             Total Pool
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Admin Fee
+                            Payout Rule
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Winners
@@ -235,8 +236,8 @@ const AdminDashboard: React.FC = () => {
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 ₹{result.totalPool}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                                ₹{result.adminFee}
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600">
+                                {result.isZeroBetWin ? 'Zero bet win' : '9x multiplier'}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {result.winnerCount}
