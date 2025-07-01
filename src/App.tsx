@@ -1,12 +1,33 @@
+import React from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { AppProvider } from './context/AppContext';
+import Login from './components/Login';
+import UserDashboard from './components/user/UserDashboard';
+import AdminDashboard from './components/admin/AdminDashboard';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
+
+const AppContent: React.FC = () => {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Login />;
+  }
+
+  return user.isAdmin ? <AdminDashboard /> : <UserDashboard />;
+};
+
 function App() {
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">LuckyPick Lottery</h1>
-        <p className="text-gray-600">Welcome to your lottery application!</p>
-      </div>
-    </div>
-  )
+    <Router>
+      <AuthProvider>
+        <AppProvider>
+          <AppContent />
+          <PWAInstallPrompt />
+        </AppProvider>
+      </AuthProvider>
+    </Router>
+  );
 }
 
-export default App
+export default App;
